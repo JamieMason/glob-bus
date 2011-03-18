@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<body>
+	<h1>Quick Test</h1>
+	<p>Demos etc to be expanded on once the codebase has settled</p>
+	
+	<script type="text/javascript" src="../core/ScopedEventModel.js"></script>
+	<script type="text/javascript" src="../core/ScopedEvent.js"></script>
+	<script type="text/javascript">
+		
+		var eventManager = new ScopedEvent();
+		
+		eventManager.bind('someEventType:this.that', function(){
+			console.log('Handler for someEventType:this.that fires, is passed:', arguments);
+		});
+
+		eventManager.bind('someEventType:this', function(){
+			console.log('Handler for someEventType:this fires, is passed:', arguments);
+		});
+		
+		eventManager.bind('someEventType', function(){
+			console.log('Handler for someEventType fires, is passed:', arguments);
+		});
+
+		eventManager.bind('someEventType:*', function(){
+			console.log('Handler for someEventType:* fires, is passed:', arguments);
+		});
+
+		eventManager.trigger('someEventType:this.that', {
+			someData: 'xxxx'
+		});
+		
+	</script>
+</body>
+</html>
