@@ -60,7 +60,7 @@ var ScopedEventModel = (function()
 	// oModel.cleanOutEmptyScope
 	function cleanOutEmptyScope (oSelf, oModel, sScopeChain)
 	{
-		if (oSelf.isEmpty(sScopeChain))
+		if (isEmpty(oSelf, oModel, sScopeChain))
 		{
 			delete oModel[sScopeChain];
 		}
@@ -116,12 +116,25 @@ var ScopedEventModel = (function()
 		oModel[sScopeChain].push(mItem);
 	}
 
-	function removeItem (oSelf, oModel, sScopeChain)
+	function removeItem (oSelf, oModel, sScopeChain, mItem)
 	{
-		if (oSelf.isEmpty(sScopeChain))
+		if (isSet(oModel, sScopeChain))
 		{
-			delete oModel[sScopeChain];
+			var i,
+			    aItemsAtScope = oModel[sScopeChain],
+				aItemsAtScopeCount = aItemsAtScope.length;
+			
+			for (i = 0; i < aItemsAtScopeCount; i++)
+			{
+				if (aItemsAtScope[i] === mItem)
+				{
+					aItemsAtScope.splice(i, 1);
+					return;
+				}
+			}
 		}
+		
+		cleanOutEmptyScope(oSelf, oModel, sScopeChain);
 	}
 
 	function containsItem (oSelf, oModel, sScopeChain, mItem)
