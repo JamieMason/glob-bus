@@ -7,74 +7,58 @@ var ScopedEventModel = (function()
 	// ie: getting "type:this.that.other" would not include anything stored
 	// at "type:this.that" or "type:this"   
 
-	// oModel.get
-	function getShallow (oSelf, oModel, sScopeChain)
+	// if scope is deep getter: '*', 'type:*', 'type:scope.*' or 'type:scope.scope.*' etc
+	function containsWildcards (sScopeChain)
 	{
-		return (sScopeChain in oModel ? oModel[sScopeChain] : null);
+		return sScopeChain.indexOf('*') !== -1;
 	}
 
-	function getDeep (oSelf, oModel, sScopeChain)
+	function removeWildcards (sScopeWithWildcards)
 	{
-		var sKey,
-		    regexp = new RegExp('^' + sScopeChain + '.+'), 
-		    aMatchingScopes = [];
-		
-		for (sKey in oModel)
+		return sScopeWithWildcards.replace(/[\.:]?\*/, '');
+	}
+	
+	function escapeRegExpChars (sSubject)
+	{
+		return sSubject.replace(/([\.\]\[\-\}\{\?\+\*])/g, '\\$1');
+	}
+
+	function scopeContainsOther (sOuter, sInner)
+	{
+		var rGenericScopePattern;
+
+		if (sOuter === '*')
 		{
-			
+			return true;
 		}
+		
+		sOuter = removeWildcards(sOuter);
+		sOuter = escapeRegExpChars(sOuter);
+		rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + sOuter + '(\.|$)');
+
+		console.log(sInner, '>>>', sOuter, rSeekMatchFromStartToPeriodOrEnd);
+
+		// if scope forms the start of the search
+		return sInner.search(rSeekMatchFromStartToPeriodOrEnd) !== -1;
 	}
 
-	// oModel.set
-	function set (oSelf, oModel, sScopeChain)
+	function defineScope (oModel, sScopeChain)
 	{
 		return (oModel[sScopeChain] = sScopeChain in oModel ? oModel[sScopeChain] : []);
 	}
 
-	function isSet (oSelf, oModel, sScopeChain)
+	function isSet (oModel, sScopeChain)
 	{
 		return sScopeChain in oModel && 'length' in oModel[sScopeChain];
 	}
 	
 	function isEmpty (oSelf, oModel, sScopeChain)
 	{
-		return oSelf.isSet(sScopeChain) && oModel[sScopeChain].length === 0;
+		return isSet(oModel, sScopeChain) && oModel[sScopeChain].length === 0;
 	}
 
-	function containsItem (oSelf, oModel, sScopeChain, mItem)
-	{
-		if (oSelf.isSet(sScopeChain))
-		{
-			for (var i = 0; i < oModel[sScopeChain].length; i++)
-			{
-				if (oModel[sScopeChain][i] === mItem)
-				{
-					return true;
-				}
-			}
-		}
-				
-		return false;
-	}
-
-	// oModel.set
-	function addItem (oSelf, oModel, sScopeChain, mItem)
-	{
-		if (oSelf.containsItem(sScopeChain, mItem))
-		{
-			return false;
-		}
-		
-		if (!oSelf.isSet(sScopeChain))
-		{
-			oSelf.set(sScopeChain);
-		}
-		
-		oModel[sScopeChain].push(mItem);
-	}
-
-	// oModel.removeIfEmpty
-	function removeIfEmpty (oSelf, oModel, sScopeChain)
+	// oModel.cleanOutEmptyScope
+	function cleanOutEmptyScope (oSelf, oModel, sScopeChain)
 	{
 		if (oSelf.isEmpty(sScopeChain))
 		{
@@ -95,7 +79,66 @@ var ScopedEventModel = (function()
 		};
 	}
 
+	// Public
+	// ==================================================================
 
+	function getItem (oSelf, oModel, sScopeChain)
+	{
+		var sPossibleMatch, 
+		    aMatchingScopeItems = [];
+		
+		for (sPossibleMatch in oModel)
+		{
+			if (sPossibleMatch === sScopeChain || containsWildcards(sScopeChain) && scopeContainsOther(sScopeChain, sPossibleMatch))
+			{
+				aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sPossibleMatch]);
+			}
+		}
+		
+		return aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null;
+	}
+
+	function addItem (oSelf, oModel, sScopeChain, mItem)
+	{
+		// don't add duplicate
+		if (oSelf.contains(sScopeChain, mItem))
+		{
+			return false;
+		}
+		
+		// make sure scope is defined
+		if (!isSet(oModel, sScopeChain))
+		{
+			defineScope(oModel, sScopeChain);
+		}
+		
+		// add item
+		oModel[sScopeChain].push(mItem);
+	}
+
+	function removeItem (oSelf, oModel, sScopeChain)
+	{
+		if (oSelf.isEmpty(sScopeChain))
+		{
+			delete oModel[sScopeChain];
+		}
+	}
+
+	function containsItem (oSelf, oModel, sScopeChain, mItem)
+	{
+		if (isSet(oModel, sScopeChain))
+		{
+			for (var i = 0; i < oModel[sScopeChain].length; i++)
+			{
+				if (oModel[sScopeChain][i] === mItem)
+				{
+					return true;
+				}
+			}
+		}
+				
+		return false;
+	}
 
 	// Exposed Constructor 
 	// ==================================================================
@@ -104,14 +147,10 @@ var ScopedEventModel = (function()
 	{
 		var oModel = {};
 
-		this.getShallow = curry(getShallow, this, oModel);
-		this.getDeep = curry(getDeep, this, oModel);
-		this.set = curry(set, this, oModel);
-		this.isSet = curry(isSet, this, oModel);
-		this.isEmpty = curry(isEmpty, this, oModel);
-		this.containsItem = curry(containsItem, this, oModel);
-		this.addItem = curry(addItem, this, oModel);
-		this.removeIfEmpty = curry(removeIfEmpty, this, oModel);
+		this.get = curry(getItem, this, oModel);
+		this.contains = curry(containsItem, this, oModel);
+		this.add = curry(addItem, this, oModel);
+		this.remove = curry(removeItem, this, oModel);
 	}
 	
 	// return constructor to outer scope
