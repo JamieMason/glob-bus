@@ -55,7 +55,7 @@ var ScopedEvent = (function()
 		args.splice(0, 1);
 		
 		// pass on the remaining arguments to fMethod
-		fMethod.apply(oSelf, args);
+		return fMethod.apply(oSelf, args);
 	}
 
 	// Public Methods
