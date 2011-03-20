@@ -89,13 +89,13 @@ var ScopedEventModel = (function()
 		
 		for (sPossibleMatch in oModel)
 		{
-			if (sPossibleMatch === sScopeChain || containsWildcards(sScopeChain) && scopeContainsOther(sScopeChain, sPossibleMatch))
+			if (sPossibleMatch === sScopeChain || containsWildcards(sPossibleMatch) && scopeContainsOther(sPossibleMatch, sScopeChain))
 			{
 				aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sPossibleMatch]);
 			}
 		}
-		
-		return aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null;
+
+		return (aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null);
 	}
 
 	function addItem (oSelf, oModel, sScopeChain, mItem)
