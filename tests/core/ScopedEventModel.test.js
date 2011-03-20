@@ -64,17 +64,18 @@
 		{
 			var fn = function(){};
 			this.subject.add('evtype:this.that.other', fn);
-			assertNotNull(this.subject.get('evtype:this.that.other'));
+			assertArray(this.subject.get('evtype:this.that.other'));
 		},
 		"test a value can be set with add and retrieved from a broader scope with get" : 
 		function()
 		{
 			var fn = function(){};
 			this.subject.add('evtype:this.that.other', fn);
-			assertNotNull(this.subject.get('evtype:this.that.*'));
-			assertNotNull(this.subject.get('evtype:this.*'));
-			assertNotNull(this.subject.get('evtype:*'));
-			assertNotNull(this.subject.get('*'));
+jstestdriver.console.log(window.oModel);
+			assertArray(this.subject.get('evtype:this.that.*'));
+			assertArray(this.subject.get('evtype:this.*'));
+			assertArray(this.subject.get('evtype:*'));
+			assertArray(this.subject.get('*'));
 		},
 		"test getting a specific scope does not include broader scopes" : 
 		function()
@@ -101,6 +102,9 @@
 			this.subject.add('evtype:this.that.other', fn);
 			this.subject.add('evtype:this.that', fn);
 			this.subject.add('evtype:this', fn);
+			assertArray(this.subject.get('evtype:this.*'));
+			assertArray(this.subject.get('evtype:*'));
+			assertArray(this.subject.get('*'));
 			assertEquals(3, this.subject.get('evtype:this.*').length);
 			assertEquals(3, this.subject.get('evtype:*').length);
 			assertEquals(3, this.subject.get('*').length);
