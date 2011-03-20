@@ -1,6 +1,5 @@
 var ScopedEvent = (function()
 {
-
 	// Utils
 	// ==================================================================
 
@@ -40,68 +39,45 @@ var ScopedEvent = (function()
 			scope : ''
 		};
 	}
-	
-	// This is the only handler ever bound to an event type, it's job is to figure out which Observers to notify
-	/*function observerProxy (oSelf, oObservers, oSubscribedEventTypes, oEvent, oEventData)
-	{
-		var sEventScope = eventDataToString (oEvent, oEventData),
-		    aScopeObservers = oObservers.get(sEventScope),
-		    nObservers,
-		    i;
 
-		// if array and not empty
-		if ('length' in aScopeObservers && (nObservers = aScopeObservers.length) > 0)
+	// Validate the event scope pattern supplied
+	function invalidRequestFilter (fMethod, oSelf, oObservers, sEventScope)
+	{
+		if (sEventScope !== '*' && sEventScope.search(/^[a-z]+:(\*|[a-z]+\.?)+$/i) === -1)
 		{
-			for (i = 0; i < nObservers; i++)
-			{
-				aScopeObservers[i].apply(oSelf, arguments);
-			}
+			throw new TypeError('[ScopeEvent] "' + sEventScope + '" is an invalid binding');
 		}
-	}*/
+		
+		// Access the arguments intended for fMethod
+		var args = Array.prototype.slice.call(arguments, 0);
+		
+		// Take off our addition fMethod first argument
+		args.splice(0, 1);
+		
+		// pass on the remaining arguments to fMethod
+		fMethod.apply(oSelf, args);
+	}
 
 	// Public Methods
 	// ==================================================================
 
-	function bind (oSelf, oObservers, oSubscribedEventTypes, sEventScope, fHandler)
+	function bind (oSelf, oObservers, sEventScope, fHandler)
 	{
-		var aScopeObservers = oObservers.set(sEventScope),
-		    nObservers,
-		    sEventType = stringToEventData(sEventScope).type,
-		    i;
-
-		// if NOT array
-		if (!('length' in aScopeObservers && typeof (nObservers = aScopeObservers.length) === 'number'))
-		{
-			return false;
-		}
-
-		// quit if this handler has been bound at this scope before
-		for (i = 0; i < nObservers; i++)
-		{
-			if (fHandler === aScopeObservers[i])
-			{
-				return false;
-			}
-		}
-
 		// add the new handler to this scope
-		aScopeObservers.push(fHandler);
-
-		// mark this event type as being observed
-		oSubscribedEventTypes[sEventType] = true;
+		oObservers.add(sEventScope, fHandler);
 	}
 
-	function unbind (oSelf, oObservers, oSubscribedEventTypes, sEventScope, fHandler)
+	function unbind (oSelf, oObservers, sEventScope, fHandler)
 	{
 		var aScopeObservers = oObservers.get(sEventScope),
 		    nObservers,
 		    sEventType = stringToEventData(sEventScope).type,
 		    i;
 
-		// if NOT array OR empty
-		if (!('length' in aScopeObservers && (nObservers = aScopeObservers.length) > 0))
+		// quit if the model returned no matches
+		if (aScopeObservers === null)
 		{
-			return false;
+			return;
 		}
 
 		// look if the fHandler s been bound at this scope
@@ -113,32 +89,32 @@ var ScopedEvent = (function()
 				aScopeObservers.slice(i, 1);
 				
 				// quit and report match to callee
-				return true;
+				return;
 			}
 		}
 	}
 
-	function trigger (oSelf, oObservers, oSubscribedEventTypes, sEventScope, oEventData)
+	function trigger (oSelf, oObservers, sEventScope, oEventData)
 	{
 		oEventData = oEventData || {};
 		
 		var aScopeObservers = oObservers.get(sEventScope),
-		    nObservers,
+		    nObservers = aScopeObservers.length,
 		    oEventTypeAndScope = stringToEventData(sEventScope),
 		    i;
 
-		// if NOT array OR empty
-		if (!('length' in aScopeObservers && (nObservers = aScopeObservers.length) > 0))
+		// quit if the model returned no matches
+		if (aScopeObservers === null)
 		{
-			return false;
+			return;
 		}
 
 		// Decorate the event data with the event type and scope
 		oEventData.type = oEventTypeAndScope.data;
 		oEventData.scope = oEventTypeAndScope.scope;
 
-		console.groupCollapsed(sEventScope);
-		console.info('[ScopedEvent].trigger transmits:', oEventData);
+		//console.groupCollapsed(sEventScope);
+		//console.info('[ScopedEvent].trigger transmits:', oEventData);
 
 		// call all handlers at this scope
 		for (i = 0; i < nObservers; i++)
@@ -146,9 +122,7 @@ var ScopedEvent = (function()
 			aScopeObservers[i](oEventData);
 		}
 		
-		console.groupEnd();
-
-		return true;
+		//console.groupEnd();
 	}
 
 	// Exposed Constructor 
@@ -156,12 +130,14 @@ var ScopedEvent = (function()
 	
 	function ScopedEvent ()
 	{
-		var oSubscribedEventTypes = {}, // @TODO - check, this may not actually be needed
-		    oObservers = scopedEventModel();
+		var oObservers = new ScopedEventModel();
 		
-		this.bind = curry(bind, this, oObservers, oSubscribedEventTypes);
-		this.unbind = curry(unbind, this, oObservers, oSubscribedEventTypes);
-		this.trigger = curry(trigger, this, oObservers, oSubscribedEventTypes);
+		this.bind = curry(invalidRequestFilter, bind, this, oObservers);
+		this.unbind = curry(invalidRequestFilter, unbind, this, oObservers);
+		this.trigger = curry(invalidRequestFilter, trigger, this, oObservers);
+		//this.bind = curry(bind, this, oObservers);
+		//this.unbind = curry(unbind, this, oObservers);
+		//this.trigger = curry(trigger, this, oObservers);
 	}
 	
 	// return constructor to outer scope
