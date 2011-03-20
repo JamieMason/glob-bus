@@ -1,3 +1,5 @@
+/*global ScopedEventModel*/
+
 var ScopedEvent = (function()
 {
 	// Utils
@@ -20,10 +22,11 @@ var ScopedEvent = (function()
 	// ==================================================================
 	
 	// return eg: "checkout:payment.complete", "ui:checkout.submit", "validator:signup.postcode.invalid"
+	/* CURRENTLY UNUSED
 	function eventDataToString (oEvent, oEventData)
 	{
 		return oEventData.scope ? oEvent.type + ':' + oEventData.scope : oEvent.type;
-	}
+	}*/
 	
 	// convert "checkout:payment.complete" to { type: "checkout", scope: "payment.complete" };
 	function stringToEventData (sEventScope)
@@ -70,8 +73,7 @@ var ScopedEvent = (function()
 	function unbind (oSelf, oObservers, sEventScope, fHandler)
 	{
 		var aScopeObservers = oObservers.get(sEventScope),
-		    nObservers,
-		    sEventType = stringToEventData(sEventScope).type,
+		    nObservers = aScopeObservers.length,
 		    i;
 
 		// quit if the model returned no matches
@@ -135,9 +137,6 @@ var ScopedEvent = (function()
 		this.bind = curry(invalidRequestFilter, bind, this, oObservers);
 		this.unbind = curry(invalidRequestFilter, unbind, this, oObservers);
 		this.trigger = curry(invalidRequestFilter, trigger, this, oObservers);
-		//this.bind = curry(bind, this, oObservers);
-		//this.unbind = curry(unbind, this, oObservers);
-		//this.trigger = curry(trigger, this, oObservers);
 	}
 	
 	// return constructor to outer scope

@@ -25,7 +25,7 @@ var ScopedEventModel = (function()
 
 	function scopeContainsOther (sOuter, sInner)
 	{
-		var rGenericScopePattern;
+		var rSeekMatchFromStartToPeriodOrEnd;
 
 		if (sOuter === '*')
 		{
@@ -34,9 +34,9 @@ var ScopedEventModel = (function()
 		
 		sOuter = removeWildcards(sOuter);
 		sOuter = escapeRegExpChars(sOuter);
-		rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + sOuter + '(\.|$)');
+		rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + sOuter + '(\\.|$)');
 
-		console.log(sInner, '>>>', sOuter, rSeekMatchFromStartToPeriodOrEnd);
+		//console.log(sInner, '>>>', sOuter, rSeekMatchFromStartToPeriodOrEnd);
 
 		// if scope forms the start of the search
 		return sInner.search(rSeekMatchFromStartToPeriodOrEnd) !== -1;
