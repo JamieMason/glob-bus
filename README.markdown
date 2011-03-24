@@ -1,4 +1,4 @@
-	With ScopedEvent you can listen to broad types of events or drill down into very specific ones independently. ScopedEvent is targeted more at how classes that make up an application can work together, with a view to avoid the need for private contracts between many observers, each needing to know about each subject they observe. 
+With ScopedEvent you can listen to broad types of events or drill down into very specific ones independently. ScopedEvent is targeted more at how classes that make up an application can work together, with a view to avoid the need for private contracts between many observers, each needing to know about each subject they observe. 
 
 The hope is that other, more generic pieces of code should be able to observe these events without needing a reference to the objects or event types involved.
 
@@ -12,28 +12,30 @@ This is used to add a function which should be called when events of this type a
 This isn't the best example as DOM event binding isn't really what ScopedEvent is about, but this is to demonstrate I've tried to keep the syntax as close as possible to the equivalent in jQuery.
 
 #### Binding with jQuery
+
 ```javascript
-$('.betslip-login-open').bind('click', function(e, data) {
-	$('form.betslip-login').show();
-});
+	$('.betslip-login-open').bind('click', function(e, data) {
+		$('form.betslip-login').show();
+	});
 ```
 
 #### Binding with ScopedEvent
+
 ```javascript
-scopedEventInstance.bind('ui:betslip.login.open', function (e, data) {
-	$('form.betslip-login').show();
-});
+	scopedEventInstance.bind('ui:betslip.login.open', function (e, data) {
+		$('form.betslip-login').show();
+	});
 ```
 
 In the case of triggering in reponse to a user click, it's something of an additional step at the moment to then trigger our custom event it amounts to (although the same would be true with jQuery and a global subject), I'll look into if some helper function is possible to make this cleaner.
 
 ```javascript
-$('.betslip-login-open').click(function() {
-	eventProxy.trigger('ui:betslip.login.open', {
-		msg : 'Opens Login form on Bet Slip',
-		element : this
+	$('.betslip-login-open').click(function() {
+		eventProxy.trigger('ui:betslip.login.open', {
+			msg : 'Opens Login form on Bet Slip',
+			element : this
+		});
 	});
-});
 ```
 
 ## Event types and scopes (eventType:followed.by.scope.chain)
