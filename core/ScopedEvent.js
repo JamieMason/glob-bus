@@ -114,7 +114,7 @@ var ScopedEvent = (function()
 		nObservers = aScopeObservers.length;
 
 		// Decorate the event data with the event type and scope
-		oEventData.type = oEventTypeAndScope.data;
+		oEventData.type = oEventTypeAndScope.type;
 		oEventData.scope = oEventTypeAndScope.scope;
 
 		//console.groupCollapsed(sEventScope);
