@@ -23,23 +23,18 @@ var ScopedEventModel = (function()
 		return sSubject.replace(/([\.\]\[\-\}\{\?\+\*])/g, '\\$1');
 	}
 
-	function scopeContainsOther (sOuter, sInner)
+	function scopeContainsOther (sBindingScope, sTriggeringScope)
 	{
 		var rSeekMatchFromStartToPeriodOrEnd;
 
-		if (sOuter === '*')
+		if (sBindingScope === '*')
 		{
 			return true;
 		}
-		
-		sOuter = removeWildcards(sOuter);
-		sOuter = escapeRegExpChars(sOuter);
-		rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + sOuter + '(\\.|$)');
 
-		//console.log(sInner, '>>>', sOuter, rSeekMatchFromStartToPeriodOrEnd);
+		rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + escapeRegExpChars(removeWildcards(sBindingScope)) + '(\\.|:|$)');
 
-		// if scope forms the start of the search
-		return sInner.search(rSeekMatchFromStartToPeriodOrEnd) !== -1;
+		return sTriggeringScope.search(rSeekMatchFromStartToPeriodOrEnd) !== -1;
 	}
 
 	function defineScope (oModel, sScopeChain)
@@ -82,23 +77,22 @@ var ScopedEventModel = (function()
 	// Public
 	// ==================================================================
 
-	function getItem (oSelf, oModel, sScopeChain)
+	function getObserversOf (oSelf, oModel, sTriggeringScope)
 	{
-		var sPossibleMatch, 
+		var sBindingScope, 
 		    aMatchingScopeItems = [];
-		
-		for (sPossibleMatch in oModel)
+
+		for (sBindingScope in oModel)
 		{
-			if (sPossibleMatch === sScopeChain || containsWildcards(sPossibleMatch) && scopeContainsOther(sPossibleMatch, sScopeChain))
+			if (sBindingScope === sTriggeringScope || containsWildcards(sBindingScope) && scopeContainsOther(sBindingScope, sTriggeringScope))
 			{
-				aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sPossibleMatch]);
+				aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sBindingScope]);
 			}
 		}
-
 		return (aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null);
 	}
 
-	function addItem (oSelf, oModel, sScopeChain, mItem)
+	function addObserverOf (oSelf, oModel, sScopeChain, mItem)
 	{
 		// don't add duplicate
 		if (oSelf.contains(sScopeChain, mItem))
@@ -160,9 +154,9 @@ var ScopedEventModel = (function()
 	{
 		var oModel = {};
 
-		this.get = curry(getItem, this, oModel);
+		this.get = curry(getObserversOf, this, oModel);
 		this.contains = curry(containsItem, this, oModel);
-		this.add = curry(addItem, this, oModel);
+		this.add = curry(addObserverOf, this, oModel);
 		this.remove = curry(removeItem, this, oModel);
 	}
 	

@@ -101,7 +101,7 @@ var ScopedEvent = (function()
 		oEventData = oEventData || {};
 		
 		var aScopeObservers = oObservers.get(sEventScope),
-		    nObservers = aScopeObservers.length,
+		    nObservers,
 		    oEventTypeAndScope = stringToEventData(sEventScope),
 		    i;
 
@@ -110,6 +110,8 @@ var ScopedEvent = (function()
 		{
 			return;
 		}
+		
+		nObservers = aScopeObservers.length;
 
 		// Decorate the event data with the event type and scope
 		oEventData.type = oEventTypeAndScope.data;

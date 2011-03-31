@@ -54,30 +54,19 @@
 		setUp : setUp,
 		tearDown : tearDown,
 
-		"test get returns null for an undefined scope" : 
+		"test get returns null for an event scope with no bindings" : 
 		function()
 		{
 			assertNull(this.subject.get('evtype:not.yet.set'));
 		},
-		"test a value can be set with add and retrieved directly with get" : 
+		"test get returns a binding added at the exact same scope" : 
 		function()
 		{
 			var fn = function(){};
 			this.subject.add('evtype:this.that.other', fn);
 			assertArray(this.subject.get('evtype:this.that.other'));
 		},
-		"test a value can be set with add and retrieved from a broader scope with get" : 
-		function()
-		{
-			var fn = function(){};
-			this.subject.add('evtype:this.that.other', fn);
-jstestdriver.console.log(window.oModel);
-			assertArray(this.subject.get('evtype:this.that.*'));
-			assertArray(this.subject.get('evtype:this.*'));
-			assertArray(this.subject.get('evtype:*'));
-			assertArray(this.subject.get('*'));
-		},
-		"test getting a specific scope does not include broader scopes" : 
+		"test bindings to specific broader scopes getting a specific scope does not include broader scopes" : 
 		function()
 		{
 			var fn = function(){};
@@ -85,32 +74,43 @@ jstestdriver.console.log(window.oModel);
 			assertNull(this.subject.get('evtype:this.that.*'));
 			assertNull(this.subject.get('evtype:this.that'));
 		},
-		"test getting a specific scope without a wildcard does not include nested scopes" : 
+		"test more generic bindings without wildcard scopes are not included when getting an event's observers" : 
 		function()
 		{
 			var fn = function(){};
-			this.subject.add('evtype:this.that.other', fn);
-			this.subject.add('evtype:this.that', fn);
 			this.subject.add('evtype:this', fn);
-			assertEquals(1, this.subject.get('evtype:this').length);
-			assertSame(fn, this.subject.get('evtype:this')[0]);
+			assertNull(this.subject.get('evtype:this.that'));
 		},
-		"test getting a scope with a wildcard includes nested scopes" : 
+		"test more specific bindings without wildcard scopes are not included when getting an event's observers" : 
 		function()
 		{
 			var fn = function(){};
-			this.subject.add('evtype:this.that.other', fn);
 			this.subject.add('evtype:this.that', fn);
-			this.subject.add('evtype:this', fn);
-			assertArray(this.subject.get('evtype:this.*'));
-			assertArray(this.subject.get('evtype:*'));
-			assertArray(this.subject.get('*'));
-			assertEquals(3, this.subject.get('evtype:this.*').length);
-			assertEquals(3, this.subject.get('evtype:*').length);
-			assertEquals(3, this.subject.get('*').length);
-			assertSame(fn, this.subject.get('*')[0]);
-			assertSame(fn, this.subject.get('*')[1]);
-			assertSame(fn, this.subject.get('*')[2]);
+			assertNull(this.subject.get('evtype:this'));
+		},
+		"test more generic bindings with wildcard scopes are included when getting an event's observers" : 
+		function()
+		{
+			var fn = function(){};
+			this.subject.add('evtype:this.that.*', fn);
+			this.subject.add('evtype:this.*', fn);
+			this.subject.add('evtype:*', fn);
+			this.subject.add('*', fn);
+			
+			assertEquals(4, this.subject.get('evtype:this.that.other').length);
+			assertEquals(4, this.subject.get('evtype:this.that').length);
+			assertEquals(3, this.subject.get('evtype:this').length);
+		},
+		"test more specific bindings with wildcard scopes are not included when getting an event's observers" : 
+		function()
+		{
+			var fn = function(){};
+			this.subject.add('evtype:this.that.other.*', fn);
+			this.subject.add('evtype:this.that.*', fn);
+			
+			assertEquals(2, this.subject.get('evtype:this.that.other').length);
+			assertEquals(1, this.subject.get('evtype:this.that').length);
+			assertNull(this.subject.get('evtype:this'));
 		}
 	});
 
@@ -130,7 +130,7 @@ jstestdriver.console.log(window.oModel);
 				self.subject.remove('evtype:not.yet.set', fn);
 			});
 		},
-		"test remove removes a defined scope" : 
+		"test remove removes a binding found at a specific event scope" : 
 		function()
 		{
 			var fn = function(){};
