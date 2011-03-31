@@ -46,7 +46,7 @@ var ScopedEvent = (function()
 	// Validate the event scope pattern supplied
 	function invalidRequestFilter (fMethod, oSelf, oObservers, sEventScope)
 	{
-		if (sEventScope !== '*' && sEventScope.search(/^[a-z]+:(\*|[a-z]+\.?)+$/i) === -1)
+		if (sEventScope !== '*' && sEventScope.search(/^[a-z0-9\-\_]+:(\*|[a-z0-9\-\_]+\.?)+$/i) === -1)
 		{
 			throw new TypeError('[ScopeEvent] "' + sEventScope + '" is an invalid binding');
 		}
