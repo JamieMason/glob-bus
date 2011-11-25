@@ -1,3 +1,8 @@
+
+/* ==================================================================================== *\
+ * scopedEvent
+\* ==================================================================================== */
+
 (function()
 {
     var oInstance = null;
@@ -43,6 +48,42 @@
             oInstance.bind('evtype:this.that.*', function () { flag = true; });
             oInstance.trigger('evtype:this.that.other');
             expect(flag).toBeTrue();
+        });
+    });
+
+}());
+
+/* ==================================================================================== *\
+ * scopedModel
+\* ==================================================================================== */
+
+(function ()
+{
+    var oInstance = null;
+
+    beforeEach(function ()
+    {
+        oInstance = scopedEvent.model();
+    });
+
+    afterEach(function ()
+    {
+        oInstance = null;
+    });
+
+    describe("scopedModel", function ()
+    {
+        it("returns an Object", function ()
+        {
+            expect(oInstance).toBeObject();
+        });
+
+        it("has 4 methods: add, remove, get & contains", function ()
+        {
+            expect(oInstance.add).toBeFunction();
+            expect(oInstance.remove).toBeFunction();
+            expect(oInstance.get).toBeFunction();
+            expect(oInstance.contains).toBeFunction();
         });
     });
 
