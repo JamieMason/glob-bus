@@ -2,173 +2,137 @@
 
 var scopedEvent = (function()
 {
-    function curry (fn /*, ... */)
-    {
-        var aCurryArgs = Array.prototype.slice.call(arguments, 1);
-
-        return function (/* ... */)
-        {
-            var aCalleeArgs = Array.prototype.slice.call(arguments, 0)
-                , aMergedArgs = aCurryArgs.concat(aCalleeArgs);
-
-            return fn.apply(this, aMergedArgs);
-        };
-    }
+    var rWildcards = /[\.:]?\*/
+        , rRegExpCharacters = /([\.\]\[\-\}\{\?\+\*])/g;
 
     /* ==================================================================================== *\
      * Model used to store Event Listeners
     \* ==================================================================================== */
 
-    // Private
-
-    function containsWildcards (sScopeChain)
-    {
-        return sScopeChain.indexOf('*') !== -1;
-    }
-
-    function removeWildcards (sScopeWithWildcards)
-    {
-        return sScopeWithWildcards.replace(/[\.:]?\*/, '');
-    }
-
-    function escapeRegExpChars (sSubject)
-    {
-        return sSubject.replace(/([\.\]\[\-\}\{\?\+\*])/g, '\\$1');
-    }
-
     function scopeContainsOther (sBindingScope, sTriggeringScope)
     {
-        var rSeekMatchFromStartToPeriodOrEnd;
+        return sBindingScope === '*' || sTriggeringScope.search(new RegExp('^' + sBindingScope.replace(rWildcards, '').replace(rRegExpCharacters, '\\$1') + '(\\.|:|$)')) !== -1;
+    }
 
-        if (sBindingScope === '*')
+    function isSet (oModel, sScope)
+    {
+        return oModel[sScope] !== void(0);
+    }
+
+    function scopeEach (oScopes, sScope, iterator)
+    {
+        var i
+            , aHandlers = oScopes[sScope]
+            , nCount = aHandlers.length
+
+        for (i = 0; i < nCount; i++)
         {
-            return true;
-        }
-
-        rSeekMatchFromStartToPeriodOrEnd = new RegExp('^' + escapeRegExpChars(removeWildcards(sBindingScope)) + '(\\.|:|$)');
-
-        return sTriggeringScope.search(rSeekMatchFromStartToPeriodOrEnd) !== -1;
-    }
-
-    function defineScope (oModel, sScopeChain)
-    {
-        return (oModel[sScopeChain] = oModel.hasOwnProperty(sScopeChain) ? oModel[sScopeChain] : []);
-    }
-
-    function isSet (oModel, sScopeChain)
-    {
-        return oModel.hasOwnProperty(sScopeChain) && oModel[sScopeChain].hasOwnProperty('length');
-    }
-
-    function isEmpty (oSelf, oModel, sScopeChain)
-    {
-        return isSet(oModel, sScopeChain) && oModel[sScopeChain].length === 0;
-    }
-
-    function cleanOutEmptyScope (oSelf, oModel, sScopeChain)
-    {
-        if (isEmpty(oSelf, oModel, sScopeChain))
-        {
-            delete oModel[sScopeChain];
+            iterator(aHandlers[i], i, aHandlers);
         }
     }
 
-    // Public
-    // ====================================================================================
-
-    function getObserversOf (oSelf, oModel, sTriggeringScope)
+    function scopeModelEach (sScope, iterator)
     {
-        var sBindingScope
-            , aMatchingScopeItems = [];
-
-        for (sBindingScope in oModel)
-        {
-            if (sBindingScope === sTriggeringScope || (containsWildcards(sBindingScope) && scopeContainsOther(sBindingScope, sTriggeringScope)))
-            {
-                aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sBindingScope]);
-            }
-        }
-        return (aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null);
+        return scopeEach(this.data, sScope, iterator);
     }
 
-    function addObserverOf (oSelf, oModel, sScopeChain, mItem)
+    function scopeEventEach (sScope, iterator)
     {
-        // don't add duplicate
-        if (oSelf.contains(sScopeChain, mItem))
-        {
-            return false;
-        }
-
-        // make sure scope is defined
-        if (!isSet(oModel, sScopeChain))
-        {
-            defineScope(oModel, sScopeChain);
-        }
-
-        // add item
-        oModel[sScopeChain].push(mItem);
-    }
-
-    function removeItem (oSelf, oModel, sScopeChain, mItem)
-    {
-        if (isSet(oModel, sScopeChain))
-        {
-            var i
-                , aItemsAtScope = oModel[sScopeChain]
-                , aItemsAtScopeCount = aItemsAtScope.length;
-
-            for (i = 0; i < aItemsAtScopeCount; i++)
-            {
-                if (aItemsAtScope[i] === mItem)
-                {
-                    aItemsAtScope.splice(i, 1);
-                    return;
-                }
-            }
-        }
-
-        cleanOutEmptyScope(oSelf, oModel, sScopeChain);
-    }
-
-    function containsItem (oSelf, oModel, sScopeChain, mItem)
-    {
-        var i;
-
-        if (isSet(oModel, sScopeChain))
-        {
-            for (i = 0; i < oModel[sScopeChain].length; i++)
-            {
-                if (oModel[sScopeChain][i] === mItem)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return scopeEach(this.model, sScope, iterator);
     }
 
     // API
     // ====================================================================================
 
-    function scopedModel ()
+    function ScopedModel ()
     {
-        var oModel = {}
-            , oApi = {};
-
-        oApi.get = curry(getObserversOf, oApi, oModel);
-        oApi.contains = curry(containsItem, oApi, oModel);
-        oApi.add = curry(addObserverOf, oApi, oModel);
-        oApi.remove = curry(removeItem, oApi, oModel);
-        return oApi;
+        this.data = {};
     }
+
+    ScopedModel.prototype = {
+        add: function (sScope, handler)
+        {
+            if (!this.contains(sScope, handler))
+            {
+                var oModel = this.data;
+
+                if (!isSet(oModel, sScope))
+                {
+                    oModel[sScope] = [];
+                }
+
+                oModel[sScope].push(handler);
+            }
+        }
+        , remove: function (sScope, handler)
+        {
+            var i
+                , oModel = this.data
+                , aListeners = oModel[sScope]
+                , nCount;
+
+            if (isSet(oModel, sScope))
+            {
+                nCount = aListeners.length;
+
+                if (nCount === 1)
+                {
+                    delete oModel[sScope];
+                }
+                else
+                {
+                    for (i = 0; i < nCount; i++)
+                    {
+                        if (aListeners[i] === handler)
+                        {
+                            aListeners.splice(i, 1);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        , get: function (sTriggeringScope)
+        {
+            var sBindingScope
+                , oModel = this.data
+                , aMatchingScopeItems = [];
+
+            for (sBindingScope in oModel)
+            {
+                if (sBindingScope === sTriggeringScope || (sBindingScope.indexOf('*') !== -1 && scopeContainsOther(sBindingScope, sTriggeringScope)))
+                {
+                    aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sBindingScope]);
+                }
+            }
+            return (aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null);
+        }
+        , contains: function (sScope, handler)
+        {
+            var i
+                , oModel = this.data;
+
+            if (isSet(oModel, sScope))
+            {
+                for (i = 0; i < oModel[sScope].length; i++)
+                {
+                    if (oModel[sScope][i] === handler)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    };
 
     /* ==================================================================================== *\
      *
     \* ==================================================================================== */
 
     // convert "checkout:payment.complete" to { type: "checkout", scope: "payment.complete" };
-    function stringToEventData (sEventScope)
+    function parseScope (sEventScope)
     {
         var isGranular = sEventScope.indexOf(':') !== -1
             , aEventScope = sEventScope.split(':');
@@ -183,102 +147,78 @@ var scopedEvent = (function()
     }
 
     // Validate the event scope pattern supplied
-    function filterInvalidRequests (fMethod, oSelf, oObservers, sEventScope)
+    function scopeIsValid (sEventScope)
     {
         if (sEventScope !== '*' && sEventScope.search(/^[a-z0-9\-\_]+:(\*|[a-z0-9\-\_]+\.?)+$/i) === -1)
         {
-            throw new TypeError('[ScopeEvent] "' + sEventScope + '" is an invalid binding');
+            throw new TypeError('[scopedEvent] "' + sEventScope + '" is an invalid binding');
         }
-
-        // Access the arguments intended for fMethod
-        var args = Array.prototype.slice.call(arguments, 0);
-
-        // Take off our addition fMethod first argument
-        args.splice(0, 1);
-
-        // pass on the remaining arguments to fMethod
-        return fMethod.apply(oSelf, args);
-    }
-
-    /* ==================================================================================== *\
-     * Public Methods
-    \* ==================================================================================== */
-
-    function bind (oSelf, oObservers, sEventScope, fHandler)
-    {
-        // add the new handler to this scope
-        oObservers.add(sEventScope, fHandler);
-    }
-
-    function unbind (oSelf, oObservers, sEventScope, fHandler)
-    {
-        var aScopeObservers = oObservers.get(sEventScope)
-            , nObservers = aScopeObservers.length
-            , i;
-
-        // quit if the model returned no matches
-        if (aScopeObservers === null)
-        {
-            return;
-        }
-
-        // look if the fHandler s been bound at this scope
-        for (i = 0; i < nObservers; i++)
-        {
-            if (fHandler === aScopeObservers[i])
-            {
-                // remove the fHandler from this scope
-                aScopeObservers.slice(i, 1);
-
-                // quit and report match to callee
-                return;
-            }
-        }
-    }
-
-    function trigger (oSelf, oObservers, sEventScope, oEventData)
-    {
-        oEventData = oEventData || {};
-
-        var aScopeObservers = oObservers.get(sEventScope)
-            , nObservers
-            , oEventTypeAndScope = stringToEventData(sEventScope)
-            , i;
-
-        // quit if the model returned no matches
-        if (aScopeObservers === null)
-        {
-            return;
-        }
-
-        nObservers = aScopeObservers.length;
-
-        // Decorate the event data with the event type and scope
-        oEventData.type = oEventTypeAndScope.type;
-        oEventData.scope = oEventTypeAndScope.scope;
-
-        // call all handlers at this scope
-        for (i = 0; i < nObservers; i++)
-        {
-            aScopeObservers[i](oEventData);
-        }
+        return true;
     }
 
     // API
     // ==================================================================
 
-    function scopedEvent ()
+    function ScopedEvent ()
     {
-        var oObservers = scopedModel()
-            , oApi = {};
+        this.model = new ScopedModel();
+    }
 
-        oApi.bind = curry(filterInvalidRequests, bind, oApi, oObservers);
-        oApi.unbind = curry(filterInvalidRequests, unbind, oApi, oObservers);
-        oApi.trigger = curry(filterInvalidRequests, trigger, oApi, oObservers);
-        return oApi;
+    ScopedEvent.prototype = {
+        bind: function (sEventScope, handler)
+        {
+            if (scopeIsValid(sEventScope))
+            {
+                this.model.add(sEventScope, handler);
+            }
+        }
+        , unbind: function (sEventScope, handler)
+        {
+            if (scopeIsValid(sEventScope))
+            {
+                var aScopeObservers = this.model.get(sEventScope)
+                    , nObservers
+                    , i;
+
+                if (aScopeObservers && (nObservers = aScopeObservers.length))
+                {
+                    for (i = 0; i < nObservers; i++)
+                    {
+                        if (handler === aScopeObservers[i])
+                        {
+                            aScopeObservers.slice(i, 1);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        , trigger: function (sEventScope, oData)
+        {
+            var aScopeObservers
+                , nObservers
+                , oBinding
+                , i;
+
+            if (scopeIsValid(sEventScope) && (aScopeObservers = this.model.get(sEventScope)))
+            {
+                oData = oData || {};
+                oBinding = parseScope(sEventScope);
+                oData.type = oBinding.type;
+                oData.scope = oBinding.scope;
+                nObservers = aScopeObservers.length;
+
+                for (i = 0; i < nObservers; i++)
+                {
+                    aScopeObservers[i](oData);
+                }
+            }
+        }
     };
 
-    scopedEvent.model = scopedModel;
-    return scopedEvent;
+    return function ()
+    {
+        return new ScopedEvent();
+    };
 
 }());

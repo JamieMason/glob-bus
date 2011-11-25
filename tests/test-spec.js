@@ -125,7 +125,7 @@
 
     beforeEach(function ()
     {
-        oInstance = scopedEvent.model();
+        oInstance = scopedEvent().model;
     });
 
     afterEach(function ()
