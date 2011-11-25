@@ -27,6 +27,10 @@ beforeEach(function ()
         {
             return Object.prototype.toString.call(this.actual) === "[object Array]";
         }
+        , toBeArrayOfSize: function (nExpected)
+        {
+            return Object.prototype.toString.call(this.actual) === "[object Array]" && this.actual.length === nExpected;
+        }
         , toBeString: function ()
         {
             return Object.prototype.toString.call(this.actual) === "[object String]";
@@ -55,19 +59,18 @@ beforeEach(function ()
         {
             return Object.prototype.toString.call(this.actual) === "[object Function]";
         }
-        , toNotThrowError: function ()
+        , toThrowError: function ()
         {
-            var didNotThrowError;
+            var threwError = false;
             try
             {
                 this.actual();
-                didNotThrowError = true;
             }
             catch (e)
             {
-                didNotThrowError = false;
+                threwError = true;
             }
-            return didNotThrowError;
+            return threwError;
         }
         , toThrowErrorOfType: function (sErrorConstructor)
         {
