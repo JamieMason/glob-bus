@@ -153,13 +153,14 @@ var scopedEvent = (function()
 
     function scopedModel ()
     {
-        var oModel = {};
-        return {
-            get: curry(getObserversOf, this, oModel)
-            , contains: curry(containsItem, this, oModel)
-            , add: curry(addObserverOf, this, oModel)
-            , remove: curry(removeItem, this, oModel)
-        };
+        var oModel = {}
+            , oApi = {};
+
+        oApi.get = curry(getObserversOf, oApi, oModel);
+        oApi.contains = curry(containsItem, oApi, oModel);
+        oApi.add = curry(addObserverOf, oApi, oModel);
+        oApi.remove = curry(removeItem, oApi, oModel);
+        return oApi;
     }
 
     /* ==================================================================================== *\
@@ -240,7 +241,8 @@ var scopedEvent = (function()
         oEventData = oEventData || {};
 
         var aScopeObservers = oObservers.get(sEventScope)
-            , nObservers, oEventTypeAndScope = stringToEventData(sEventScope)
+            , nObservers
+            , oEventTypeAndScope = stringToEventData(sEventScope)
             , i;
 
         // quit if the model returned no matches
@@ -265,15 +267,18 @@ var scopedEvent = (function()
     // API
     // ==================================================================
 
-    return function ()
+    function scopedEvent ()
     {
-        var oObservers = scopedModel();
+        var oObservers = scopedModel()
+            , oApi = {};
 
-        return {
-            bind: curry(filterInvalidRequests, bind, this, oObservers)
-            , unbind: curry(filterInvalidRequests, unbind, this, oObservers)
-            , trigger: curry(filterInvalidRequests, trigger, this, oObservers)
-        };
+        oApi.bind = curry(filterInvalidRequests, bind, oApi, oObservers);
+        oApi.unbind = curry(filterInvalidRequests, unbind, oApi, oObservers);
+        oApi.trigger = curry(filterInvalidRequests, trigger, oApi, oObservers);
+        return oApi;
     };
+
+    scopedEvent.model = scopedModel;
+    return scopedEvent;
 
 }());
