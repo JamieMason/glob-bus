@@ -9,9 +9,9 @@ var scopedEvent = (function()
      * Model used to store Event Listeners
     \* ==================================================================================== */
 
-    function scopeContainsOther (sBindingScope, sTriggeringScope)
+    function scopeContainsOther (sListenerScope, sScope)
     {
-        return sBindingScope === '*' || sTriggeringScope.search(new RegExp('^' + sBindingScope.replace(rWildcards, '').replace(rRegExpCharacters, '\\$1') + '(\\.|:|$)')) !== -1;
+        return sListenerScope === '*' || sScope.search(new RegExp('^' + sListenerScope.replace(rWildcards, '').replace(rRegExpCharacters, '\\$1') + '(\\.|:|$)')) !== -1;
     }
 
     function isSet (oModel, sScope)
@@ -19,26 +19,23 @@ var scopedEvent = (function()
         return oModel[sScope] !== void(0);
     }
 
-    function scopeEach (oScopes, sScope, iterator)
+    function each (arr, iterator)
     {
+        arr = arr || [];
+
         var i
-            , aHandlers = oScopes[sScope]
-            , nCount = aHandlers.length
+            , nCount = arr.length
+            , returnValue;
 
         for (i = 0; i < nCount; i++)
         {
-            iterator(aHandlers[i], i, aHandlers);
+            returnValue = iterator(arr[i], i, arr, nCount);
+
+            if (typeof returnValue === 'boolean')
+            {
+                return returnValue;
+            }
         }
-    }
-
-    function scopeModelEach (sScope, iterator)
-    {
-        return scopeEach(this.data, sScope, iterator);
-    }
-
-    function scopeEventEach (sScope, iterator)
-    {
-        return scopeEach(this.model, sScope, iterator);
     }
 
     // API
@@ -50,12 +47,17 @@ var scopedEvent = (function()
     }
 
     ScopedModel.prototype = {
-        add: function (sScope, handler)
+        each: function (sScope, iterator)
         {
-            if (!this.contains(sScope, handler))
-            {
-                var oModel = this.data;
+            return each(this.data[sScope], iterator);
+        }
+        , add: function (sScope, handler)
+        {
+            var oSelf = this
+                , oModel = oSelf.data;
 
+            if (!oSelf.contains(sScope, handler))
+            {
                 if (!isSet(oModel, sScope))
                 {
                     oModel[sScope] = [];
@@ -66,64 +68,49 @@ var scopedEvent = (function()
         }
         , remove: function (sScope, handler)
         {
-            var i
-                , oModel = this.data
-                , aListeners = oModel[sScope]
-                , nCount;
+            var oSelf = this
+                , oModel = oSelf.data;
 
             if (isSet(oModel, sScope))
             {
-                nCount = aListeners.length;
-
-                if (nCount === 1)
-                {
-                    delete oModel[sScope];
-                }
-                else
-                {
-                    for (i = 0; i < nCount; i++)
+                oModel[sScope].length === 1 ?
+                    delete oModel[sScope]
+                    :
+                    oSelf.each(sScope, function (el, ix, arr, count)
                     {
-                        if (aListeners[i] === handler)
+                        if (el === handler)
                         {
-                            aListeners.splice(i, 1);
-                            return;
+                            arr.splice(ix, 1);
+                            return false;
                         }
-                    }
-                }
+                    });
             }
         }
-        , get: function (sTriggeringScope)
+        , get: function (sScope)
         {
-            var sBindingScope
-                , oModel = this.data
+            var oSelf = this
+                , sListenerScope
+                , oModel = oSelf.data
                 , aMatchingScopeItems = [];
 
-            for (sBindingScope in oModel)
+            for (sListenerScope in oModel)
             {
-                if (sBindingScope === sTriggeringScope || (sBindingScope.indexOf('*') !== -1 && scopeContainsOther(sBindingScope, sTriggeringScope)))
+                if (sListenerScope === sScope || (sListenerScope.indexOf('*') !== -1 && scopeContainsOther(sListenerScope, sScope)))
                 {
-                    aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sBindingScope]);
+                    aMatchingScopeItems = aMatchingScopeItems.concat(oModel[sListenerScope]);
                 }
             }
-            return (aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null);
+            return aMatchingScopeItems.length > 0 ? aMatchingScopeItems : null;
         }
         , contains: function (sScope, handler)
         {
-            var i
-                , oModel = this.data;
-
-            if (isSet(oModel, sScope))
+            return isSet(this.data, sScope) && (this.each(sScope, function (el)
             {
-                for (i = 0; i < oModel[sScope].length; i++)
+                if (el === handler)
                 {
-                    if (oModel[sScope][i] === handler)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-            }
-
-            return false;
+            }) || false);
         }
     };
 
@@ -132,26 +119,25 @@ var scopedEvent = (function()
     \* ==================================================================================== */
 
     // convert "checkout:payment.complete" to { type: "checkout", scope: "payment.complete" };
-    function parseScope (sEventScope)
+    function parseScope (sScope)
     {
-        var isGranular = sEventScope.indexOf(':') !== -1
-            , aEventScope = sEventScope.split(':');
+        var isGranular = sScope.indexOf(':') !== -1
+            , aEventScope = sScope.split(':');
 
         return isGranular ? {
             type: aEventScope[0]
             , scope: aEventScope[1]
         } : {
-            type: sEventScope
+            type: sScope
             , scope: ''
         };
     }
 
-    // Validate the event scope pattern supplied
-    function scopeIsValid (sEventScope)
+    function scopeIsValid (sScope)
     {
-        if (sEventScope !== '*' && sEventScope.search(/^[a-z0-9\-\_]+:(\*|[a-z0-9\-\_]+\.?)+$/i) === -1)
+        if (sScope !== '*' && sScope.search(/^[a-z0-9\-\_]+:(\*|[a-z0-9\-\_]+\.?)+$/i) === -1)
         {
-            throw new TypeError('[scopedEvent] "' + sEventScope + '" is an invalid binding');
+            throw new TypeError('[scopedEvent] "' + sScope + '" is an invalid binding');
         }
         return true;
     }
@@ -165,53 +151,40 @@ var scopedEvent = (function()
     }
 
     ScopedEvent.prototype = {
-        bind: function (sEventScope, handler)
+        bind: function (sScope, handler)
         {
-            if (scopeIsValid(sEventScope))
+            if (scopeIsValid(sScope))
             {
-                this.model.add(sEventScope, handler);
+                this.model.add(sScope, handler);
             }
         }
-        , unbind: function (sEventScope, handler)
+        , unbind: function (sScope, handler)
         {
-            if (scopeIsValid(sEventScope))
+            if (scopeIsValid(sScope))
             {
-                var aScopeObservers = this.model.get(sEventScope)
-                    , nObservers
-                    , i;
-
-                if (aScopeObservers && (nObservers = aScopeObservers.length))
+                each(this.model.get(sScope), function (el, ix, list)
                 {
-                    for (i = 0; i < nObservers; i++)
+                    if (handler === el)
                     {
-                        if (handler === aScopeObservers[i])
-                        {
-                            aScopeObservers.slice(i, 1);
-                            return;
-                        }
+                        list.slice(ix, 1);
+                        return true;
                     }
-                }
+                });
             }
         }
-        , trigger: function (sEventScope, oData)
+        , trigger: function (sScope, oData)
         {
-            var aScopeObservers
-                , nObservers
-                , oBinding
-                , i;
-
-            if (scopeIsValid(sEventScope) && (aScopeObservers = this.model.get(sEventScope)))
+            if (scopeIsValid(sScope))
             {
+                var oBinding = parseScope(sScope);
                 oData = oData || {};
-                oBinding = parseScope(sEventScope);
                 oData.type = oBinding.type;
                 oData.scope = oBinding.scope;
-                nObservers = aScopeObservers.length;
 
-                for (i = 0; i < nObservers; i++)
+                each(this.model.get(sScope), function (el)
                 {
-                    aScopeObservers[i](oData);
-                }
+                    el(oData);
+                });
             }
         }
     };

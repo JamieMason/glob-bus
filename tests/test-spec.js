@@ -93,6 +93,7 @@
 
             it("calls all listeners when an event is triggered at an enclosing scope", function ()
             {
+                console.log('>>>');
                 var callCount = 0;
                 oInstance.bind('evtype:this.that.*', function () { callCount++; });
                 oInstance.bind('evtype:this.*', function () { callCount++; });
@@ -100,6 +101,7 @@
                 oInstance.bind('*', function () { callCount++; });
                 oInstance.trigger('evtype:this.that.other');
                 expect(callCount).toEqual(4);
+                console.log('<<<');
             });
 
             it("ignores attempts to deeply trigger every listener bound below a higher level type (it doesn't make sense)", function ()
