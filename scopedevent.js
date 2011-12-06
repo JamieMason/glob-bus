@@ -151,11 +151,11 @@ var scopedEvent = (function()
     }
 
     ScopedEvent.prototype = {
-        bind: function (sScope, handler)
+        bind: function (sScope, handler, oThis)
         {
             if (scopeIsValid(sScope))
             {
-                this.model.add(sScope, handler);
+                this.model.add(sScope, oThis ? function (oData) { handler.apply(oThis, [oData]) } : handler);
             }
         }
         , unbind: function (sScope, handler)
@@ -176,14 +176,9 @@ var scopedEvent = (function()
         {
             if (scopeIsValid(sScope))
             {
-                var oBinding = parseScope(sScope);
-                oData = oData || {};
-                oData.type = oBinding.type;
-                oData.scope = oBinding.scope;
-
                 each(this.model.get(sScope), function (el)
                 {
-                    el(oData);
+                    el(oData || {}, parseScope(sScope));
                 });
             }
         }
