@@ -1,0 +1,10 @@
+{
+  "name": "ScopedEvent",
+  "description": "A hierarchical pub/sub event manager with namespace and wildcard support",
+  "version": "1.0.0",
+  "homepage": "https://github.com/JamieMason/ScopedEvent",
+  "scripts": {
+    "preinstall": "sudo npm install -g testacular@canary"
+  },
+  "keywords": ["events", "eventing", "listeners", "evented", "event"]
+}
