@@ -1,5 +1,7 @@
 # ScopedEvent
 
+A hierarchical pub/sub event manager with namespace wildcard support.
+
 ## Usage
 
     var eventManager = scopedEvent();

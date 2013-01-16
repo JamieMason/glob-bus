@@ -1,6 +1,6 @@
 {
   "name": "ScopedEvent",
-  "description": "A hierarchical pub/sub event manager with namespace and wildcard support",
+  "description": "A hierarchical pub/sub event manager with namespace wildcard support",
   "version": "1.0.0",
   "homepage": "https://github.com/JamieMason/ScopedEvent",
   "scripts": {
