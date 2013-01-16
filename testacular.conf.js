@@ -17,6 +17,8 @@ coverageReporter = {
   dir : 'src-test/coverage/'
 };
 
+browsers = ['PhantomJS'];
+
 // run on save
 autoWatch = false;
 singleRun = true;
