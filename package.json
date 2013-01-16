@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "homepage": "https://github.com/JamieMason/ScopedEvent",
   "scripts": {
-    "preinstall": "sudo npm install -g testacular@canary"
+    "preinstall": "npm install -g testacular@canary"
   },
   "keywords": ["events", "eventing", "listeners", "evented", "event"]
 }
