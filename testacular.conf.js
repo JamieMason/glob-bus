@@ -1,4 +1,4 @@
-reporters = ['coverage', 'progress'];
+reporters = ['coverage', 'progress', 'junit'];
 
 files = [
   JASMINE,
@@ -14,7 +14,7 @@ preprocessors = {
 
 coverageReporter = {
   type : 'html',
-  dir : 'coverage/'
+  dir : 'src-test/coverage/'
 };
 
 // run on save
@@ -30,4 +30,6 @@ captureTimeout = 5000;
 logLevel = LOG_INFO;
 colors = true;
 
-junitReporter = {outputFile: 'test-results.xml'};
+junitReporter = {
+  outputFile: 'src-test/test-results.xml'
+};
