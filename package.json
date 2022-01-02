@@ -1,10 +1,48 @@
 {
-  "name": "ScopedEvent",
+  "name": "glob-bus",
   "description": "A hierarchical pub/sub event manager with namespace wildcard support",
   "version": "1.0.0",
-  "homepage": "https://github.com/JamieMason/ScopedEvent",
-  "scripts": {
-    "preinstall": "npm install -g testacular@canary"
+  "author": "Jamie Mason <jamie@foldleft.io> (https://github.com/JamieMason)",
+  "bugs": "https://github.com/JamieMason/glob-bus/issues",
+  "devDependencies": {
+    "@types/jest": "27.4.0",
+    "@typescript-eslint/eslint-plugin": "5.8.1",
+    "@typescript-eslint/parser": "5.8.1",
+    "eslint": "8.6.0",
+    "eslint-plugin-import": "2.25.3",
+    "expect-more-jest": "5.4.0",
+    "jest": "27.4.5",
+    "prettier": "2.5.1",
+    "ts-jest": "27.1.2",
+    "typescript": "4.5.4",
+    "uglify-js": "3.14.5"
   },
-  "keywords": ["events", "eventing", "listeners", "evented", "event"]
+  "engines": {
+    "node": ">=10"
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/JamieMason/glob-bus#readme",
+  "keywords": [
+    "event-bus",
+    "eventbus",
+    "pub-sub",
+    "pubsub"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "repository": "JamieMason/glob-bus",
+  "scripts": {
+    "build": "yarn build:clean && yarn build:tsc && yarn build:uglifyjs",
+    "build:clean": "rm -rf ./dist",
+    "build:tsc": "tsc --project .",
+    "build:uglifyjs": "uglifyjs  --compress --mangle --source-map --output dist/index.js -- dist/index.js",
+    "format": "yarn format:lint && yarn format:source",
+    "format:lint": "yarn lint --fix",
+    "format:source": "prettier --write .",
+    "lint": "eslint --ext .ts .",
+    "prepack": "yarn build",
+    "test": "jest"
+  }
 }

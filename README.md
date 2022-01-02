@@ -1,35 +1,45 @@
-# ScopedEvent
+# glob-bus
 
-A hierarchical pub/sub event manager with namespace wildcard support.
+249 byte pub/sub event bus with namespaced wildcard support.
 
-## Usage
+[![NPM version](http://img.shields.io/npm/v/glob-bus.svg?style=flat-square)](https://www.npmjs.com/package/glob-bus)
+[![NPM downloads](http://img.shields.io/npm/dm/glob-bus.svg?style=flat-square)](https://www.npmjs.com/package/glob-bus)
+[![Follow JamieMason on GitHub](https://img.shields.io/github/followers/JamieMason.svg?style=social&label=Follow)](https://github.com/JamieMason)
+[![Follow fold_left on Twitter](https://img.shields.io/twitter/follow/fold_left.svg?style=social&label=Follow)](https://twitter.com/fold_left)
 
-    var eventManager = scopedEvent();
+## Installation
 
-    eventManager.bind('evtype:this.that.other', function(){
-      console.log('Handler for evtype:this.that.other fires, is passed:', arguments);
-    });
+```
+npm install --save glob-bus
+```
 
-    eventManager.bind('evtype:this.that.*', function(){
-      console.log('Handler for evtype:this.that.* fires, is passed:', arguments);
-    });
+## Example
 
-    eventManager.bind('evtype:this.*', function(){
-      console.log('Handler for evtype:this.* fires, is passed:', arguments);
-    });
+In this example, all three listeners will be invoked.
 
-    eventManager.bind('evtype:*', function(){
-      console.log('Handler for evtype:* fires, is passed:', arguments);
-    });
+```ts
+import { globBus } from 'glob-bus';
 
-    eventManager.bind('*', function(){
-      console.log('Handler for * fires, is passed:', arguments);
-    });
+type Event =
+  | { type: 'basket.product.add'; id: number }
+  | { type: 'basket.product.remove'; id: number };
 
-    eventManager.trigger('evtype:this.that.other', {
-      someData: 'xxxx'
-    });
+const { on, send } = globBus<Event>();
 
-## Run Tests
+on('*', (event: Event) => console.log(1, event));
+on('basket.*', (event: Event) => console.log(2, event));
+on('basket.product.*', (event: Event) => console.log(3, event));
 
-    $ testacular start
+send({ type: 'basket.product.add', id: 123 });
+```
+
+The `on` function returns a function to unregister the given listener:
+
+```ts
+import { globBus } from 'glob-bus';
+
+const { on, send } = globBus();
+const off = on('basket.product.*', fn);
+
+off();
+```
